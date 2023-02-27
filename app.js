@@ -1,9 +1,12 @@
-const http = require("http");
+const express = require("express");
+const mongoose = require("mongoose");
 
-const { PORT = 3000 } = process.env;
+const app = express();
 
-const server = http.createServer(() => {
-  console.log("Пришёл запрос!");
+mongoose.connect("mongodb://localhost:27017/mestodb", {
+  useNewUrlParser: true,
+  useCreateIndex: true,
+  useFindAndModify: false,
 });
 
-server.listen(PORT);
+app.listen(3000);
