@@ -20,10 +20,6 @@ app.use((req, res, next) => {
   next();
 });
 
-module.exports.createCard = (req, res) => {
-  console.log(req.user._id); // _id станет доступен
-};
-
 app.use("/users", require("./routes/users"));
 app.use("/cards", require("./routes/cards"));
 

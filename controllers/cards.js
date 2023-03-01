@@ -28,3 +28,31 @@ module.exports.deleteCard = (req, res) => {
       res.status(500).send({ message: `Something went wrong ${err}` })
     );
 };
+
+module.exports.setLike = (req, res) => {
+  Card.findByIdAndUpdate(
+    req.params.cardId,
+    { $addToSet: { likes: req.user._id } },
+    { new: true }
+  )
+    .then((card) => {
+      res.status(200).send({ data: card });
+    })
+    .catch((err) =>
+      res.status(500).send({ message: `Something went wrong ${err}` })
+    );
+};
+
+module.exports.delLike = (req, res) => {
+  Card.findByIdAndUpdate(
+    req.params.cardId,
+    { $pull: { likes: req.user._id } },
+    { new: true }
+  )
+    .then((card) => {
+      res.status(200).send({ data: card });
+    })
+    .catch((err) =>
+      res.status(500).send({ message: `Something went wrong ${err}` })
+    );
+};
