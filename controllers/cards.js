@@ -1,4 +1,6 @@
 const Card = require("../models/card");
+const NotFoundError = require("../errors/NotFoundError");
+const BadRequestError = require("../errors/BadRequestError");
 
 module.exports.findCards = (req, res) => {
   Card.find({})
@@ -8,51 +10,63 @@ module.exports.findCards = (req, res) => {
     );
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
-  Card.create({ name, link })
+  const owner = req.user._id;
+
+  Card.create({ name, link, owner })
     .then((card) => {
       res.status(201).send({ data: card });
     })
-    .catch((err) =>
-      res.status(500).send({ message: `Something went wrong ${err}` })
-    );
+    .catch((err) => {
+      if (err.name === "ValidationError") {
+        next(new BadRequestError("Incorrect data was transmitted"));
+      } else {
+        next(err);
+      }
+    });
 };
 
 module.exports.deleteCard = (req, res) => {
   Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
-      res.status(200).send({ data: card });
+      if (!card) {
+        next(new NotFoundError("Card not found"));
+      } else {
+        res.status(200).send({ data: card });
+      }
     })
-    .catch((err) =>
-      res.status(500).send({ message: `Something went wrong ${err}` })
-    );
+    .catch((err) => next(err));
 };
 
-module.exports.setLike = (req, res) => {
+module.exports.setLike = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
     { new: true }
   )
     .then((card) => {
-      res.status(200).send({ data: card });
+      if (!card) {
+        next(new NotFoundError("Card not found"));
+      } else {
+        res.status(200).send({ data: card });
+      }
     })
-    .catch((err) =>
-      res.status(500).send({ message: `Something went wrong ${err}` })
-    );
+    .catch((err) => next(err));
 };
 
-module.exports.delLike = (req, res) => {
+module.exports.delLike = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
     { new: true }
   )
     .then((card) => {
-      res.status(200).send({ data: card });
+      if (!card) {
+        next(new NotFoundError("Card not found"));
+      } else {
+        res.status(200).send({ data: card });
+      }
     })
-    .catch((err) =>
-      res.status(500).send({ message: `Something went wrong ${err}` })
-    );
+    .catch((err) => next(err));
 };
