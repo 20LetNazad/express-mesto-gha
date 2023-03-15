@@ -62,7 +62,13 @@ module.exports.setLike = (req, res, next) => {
         res.status(200).send({ data: card });
       }
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.name === "CastError") {
+        next(new BadRequestError("Incorrect data was transmitted"));
+      } else {
+        next(err);
+      }
+    });
 };
 
 module.exports.delLike = (req, res, next) => {
@@ -78,5 +84,11 @@ module.exports.delLike = (req, res, next) => {
         res.status(200).send({ data: card });
       }
     })
-    .catch((err) => next(err));
+    .catch((err) => {
+      if (err.name === "CastError") {
+        next(new BadRequestError("Incorrect data was transmitted"));
+      } else {
+        next(err);
+      }
+    });
 };

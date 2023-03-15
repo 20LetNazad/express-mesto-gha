@@ -18,7 +18,11 @@ module.exports.findUserById = (req, res, next) => {
       }
     })
     .catch((err) => {
-      next(err);
+      if (err.name === "CastError") {
+        next(new BadRequestError("Incorrect data was transmitted"));
+      } else {
+        next(err);
+      }
     });
 };
 
