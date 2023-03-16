@@ -21,12 +21,13 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((_, res) => {
-  res.status(404).send({ message: "Route not found" });
-});
 
 app.use("/users", require("./routes/users"));
 app.use("/cards", require("./routes/cards"));
+
+app.use((_, res) => {
+  res.status(404).send({ message: "Route not found" });
+});
 
 app.listen(PORT, () => {
   console.log(`App starting on port ${PORT}`);
