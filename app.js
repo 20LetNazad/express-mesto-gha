@@ -1,6 +1,7 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
+const router = require("express").Router();
 
 mongoose.set("strictQuery", false);
 
@@ -18,6 +19,10 @@ app.use((req, res, next) => {
   };
 
   next();
+});
+
+app.use((_, res) => {
+  res.status(404).send({ message: "Route not found" });
 });
 
 app.use("/users", require("./routes/users"));
