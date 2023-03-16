@@ -1,28 +1,32 @@
 const User = require("../models/user");
-const NotFoundError = require("../errors/NotFoundError");
-const BadRequestError = require("../errors/BadRequestError");
 
 module.exports.findUsers = (req, res) => {
   User.find({})
-    .then((users) => res.send({ data: users }))
-    .catch((err) => res.status(500).send({ message: err }));
-};
-
-module.exports.findUserById = (req, res, next) => {
-  User.findById(req.params.userId)
-    .then((user) => {
-      if (!user) {
-        next(new NotFoundError("User not found"));
-      } else {
-        res.send({ data: user });
-      }
-    })
+    .then((user) => res.send({ data: user }))
     .catch((err) => {
-      next(err);
+      res.status(500).send({ message: "Something went wrong" });
     });
 };
 
-module.exports.createUser = (req, res, next) => {
+module.exports.findUserById = (req, res) => {
+  User.findById(req.params.userId)
+    .then((user) => {
+      if (!user) {
+        res.status(404).send({ message: "User not found" });
+      } else {
+        res.status(200).send({ data: user });
+      }
+    })
+    .catch((err) => {
+      if (err.name === "CastError") {
+        res.status(400).send({ message: "Incorrect data was transmitted" });
+      } else {
+        res.status(500).send({ message: "Something went wrong" });
+      }
+    });
+};
+
+module.exports.createUser = (req, res) => {
   const { name, about, avatar } = req.body;
 
   User.create({
@@ -31,18 +35,18 @@ module.exports.createUser = (req, res, next) => {
     avatar,
   })
     .then((user) => {
-      res.send({ data: user });
+      res.status(200).send({ data: user });
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        next(new BadRequestError("Incorrect data was transmitted"));
+        res.status(400).send({ message: "Incorrect data was transmitted" });
       } else {
-        next(err);
+        res.status(500).send({ message: "Something went wrong" });
       }
     });
 };
 
-module.exports.editUser = (req, res, next) => {
+module.exports.editUser = (req, res) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(
@@ -54,22 +58,22 @@ module.exports.editUser = (req, res, next) => {
     }
   )
     .then((user) => {
-      if (user === null) {
-        next(new NotFoundError("User not found"));
+      if (!user) {
+        res.status(404).send({ message: "User not found" });
       } else {
-        res.send({ data: user });
+        res.status(200).send({ data: user });
       }
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        next(new BadRequestError("Incorrect data was transmitted"));
+        res.status(400).send({ message: "Incorrect data was transmitted" });
       } else {
-        next(err);
+        res.status(500).send({ message: "Something went wrong" });
       }
     });
 };
 
-module.exports.editAvatar = (req, res, next) => {
+module.exports.editAvatar = (req, res) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(
@@ -82,16 +86,16 @@ module.exports.editAvatar = (req, res, next) => {
   )
     .then((user) => {
       if (!user) {
-        next(new NotFoundError("User not found"));
+        res.status(404).send({ message: "User not found" });
       } else {
-        res.send({ data: user });
+        res.status(200).send({ data: user });
       }
     })
     .catch((err) => {
       if (err.name === "ValidationError") {
-        next(new BadRequestError("Incorrect data was transmitted"));
+        res.status(400).send({ message: "Incorrect data was transmitted" });
       } else {
-        next(err);
+        res.status(500).send({ message: "Something went wrong" });
       }
     });
 };
