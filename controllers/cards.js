@@ -1,12 +1,10 @@
 const Card = require("../models/card");
-const NotFoundError = require("../errors/NotFoundError");
-const BadRequestError = require("../errors/BadRequestError");
-const CastError = require("../errors/CastError");
-const DefaultError = require("../errors/DefaultError");
 
 module.exports.findCards = (req, res) => {
   Card.find({})
-    .then((cards) => res.status(200).send(cards))
+    .then((card) => {
+      res.status(200).send(card);
+    })
     .catch((err) => {
       res.status(500).send({ message: "Something went wrong" });
     });
