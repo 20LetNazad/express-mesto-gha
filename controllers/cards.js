@@ -33,9 +33,13 @@ module.exports.deleteCard = (req, res) => {
       if (!card) {
         res.status(404).send({ message: "Card not found" });
       } else if (card.owner.toString() === req.user._id) {
-        Card.deleteOne().then(() => {
-          res.status(200).send({ data: card });
-        });
+        Card.deleteOne()
+          .then(() => {
+            res.status(200).send({ data: card });
+          })
+          .catch((err) => {
+            res.status(500).send({ message: "Something went wrong" });
+          });
       } else {
         res.status(403).send({ message: "It's not your post" });
       }
