@@ -1,12 +1,12 @@
-const Card = require("../models/card");
+const Card = require('../models/card');
 
 module.exports.findCards = (req, res) => {
   Card.find({})
     .then((card) => {
       res.status(200).send(card);
     })
-    .catch((err) => {
-      res.status(500).send({ message: "Something went wrong" });
+    .catch(() => {
+      res.status(500).send({ message: 'Something went wrong' });
     });
 };
 
@@ -19,10 +19,10 @@ module.exports.createCard = (req, res) => {
       res.status(200).send({ data: card });
     })
     .catch((err) => {
-      if (err.name === "ValidationError") {
-        res.status(400).send({ message: "Incorrect data was transmitted" });
+      if (err.name === 'ValidationError') {
+        res.status(400).send({ message: 'Incorrect data was transmitted' });
       } else {
-        res.status(500).send({ message: "Something went wrong" });
+        res.status(500).send({ message: 'Something went wrong' });
       }
     });
 };
@@ -31,20 +31,24 @@ module.exports.deleteCard = (req, res) => {
   Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
       if (!card) {
-        res.status(404).send({ message: "Card not found" });
+        res.status(404).send({ message: 'Card not found' });
       } else if (card.owner.toString() === req.user._id) {
-        Card.deleteOne().then(() => {
-          res.status(200).send({ data: card });
-        });
+        Card.deleteOne()
+          .then(() => {
+            res.status(200).send({ data: card });
+          })
+          .catch(() => {
+            res.status(500).send({ message: 'Something went wrong' });
+          });
       } else {
         res.status(403).send({ message: "It's not your post" });
       }
     })
     .catch((err) => {
-      if (err.name === "CastError") {
-        res.status(400).send({ message: "Incorrect data was transmitted" });
+      if (err.name === 'CastError') {
+        res.status(400).send({ message: 'Incorrect data was transmitted' });
       } else {
-        res.status(500).send({ message: "Something went wrong" });
+        res.status(500).send({ message: 'Something went wrong' });
       }
     });
 };
@@ -53,20 +57,20 @@ module.exports.setLike = (req, res) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
-    { new: true }
+    { new: true },
   )
     .then((card) => {
       if (!card) {
-        res.status(404).send({ message: "Card not found" });
+        res.status(404).send({ message: 'Card not found' });
       } else {
         res.status(200).send({ data: card });
       }
     })
     .catch((err) => {
-      if (err.name === "CastError") {
-        res.status(400).send({ message: "Incorrect data was transmitted" });
+      if (err.name === 'CastError') {
+        res.status(400).send({ message: 'Incorrect data was transmitted' });
       } else {
-        res.status(500).send({ message: "Something went wrong" });
+        res.status(500).send({ message: 'Something went wrong' });
       }
     });
 };
@@ -75,20 +79,20 @@ module.exports.delLike = (req, res) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
-    { new: true }
+    { new: true },
   )
     .then((card) => {
       if (!card) {
-        res.status(404).send({ message: "Card not found" });
+        res.status(404).send({ message: 'Card not found' });
       } else {
         res.status(200).send({ data: card });
       }
     })
     .catch((err) => {
-      if (err.name === "CastError") {
-        res.status(400).send({ message: "Incorrect data was transmitted" });
+      if (err.name === 'CastError') {
+        res.status(400).send({ message: 'Incorrect data was transmitted' });
       } else {
-        res.status(500).send({ message: "Something went wrong" });
+        res.status(500).send({ message: 'Something went wrong' });
       }
     });
 };
