@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const { createUser, login } = require('./controllers/users');
 
 mongoose.set('strictQuery', false);
 
@@ -21,6 +22,9 @@ app.use((req, res, next) => {
 
 app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
+
+app.post('/signup', createUser);
+app.post('/signin', login);
 
 app.use((_, res) => {
   res.status(404).send({ message: 'Route not found' });
