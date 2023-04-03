@@ -2,15 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
-module.exports.findUsers = (req, res) => {
-  User.find({})
-    .then((user) => res.send({ data: user }))
-    .catch(() => {
-      res.status(500).send({ message: 'Something went wrong' });
-    });
-};
-
-module.exports.findUserById = (req, res) => {
+function findUserById(req, res) {
   User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
@@ -26,6 +18,18 @@ module.exports.findUserById = (req, res) => {
         res.status(500).send({ message: 'Something went wrong' });
       }
     });
+}
+
+module.exports.findUsers = (req, res) => {
+  User.find({})
+    .then((user) => res.send({ data: user }))
+    .catch(() => {
+      res.status(500).send({ message: 'Something went wrong' });
+    });
+};
+
+module.exports.getUser = (req, res, next) => {
+  findUserById(req.user._id, res, next);
 };
 
 module.exports.createUser = (req, res) => {
@@ -111,7 +115,7 @@ module.exports.login = (req, res) => {
   const { email, password } = req.body;
   User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'some-secret-key', {
+      const token = jwt.sign({ _id: user._id }, 'secret-key', {
         expiresIn: '3d',
       });
       res.cookie('jwt', token, {
