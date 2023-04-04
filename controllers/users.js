@@ -2,8 +2,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
-function findUserById(req, res) {
-  User.findById(req.params.userId)
+function findUserById(req, res, userId) {
+  User.findById(userId)
     .then((user) => {
       if (!user) {
         res.status(404).send({ message: 'User not found' });
@@ -28,8 +28,12 @@ module.exports.findUsers = (req, res) => {
     });
 };
 
-module.exports.getUser = (req, res, next) => {
+module.exports.getMyUser = (req, res, next) => {
   findUserById(req.user._id, res, next);
+};
+
+module.exports.getUser = (req, res, next) => {
+  findUserById(req.params.userId, res, next);
 };
 
 module.exports.createUser = (req, res) => {
@@ -113,18 +117,33 @@ module.exports.editAvatar = (req, res) => {
 
 module.exports.login = (req, res) => {
   const { email, password } = req.body;
-  User.findUserByCredentials(email, password)
+  let userId;
+
+  User.findOne({ email })
+    .select('+password')
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'secret-key', {
+      if (!user) {
+        res.status(401).send({ message: 'Incorrect password or email' });
+      }
+
+      userId = user._id;
+      return bcrypt.compare(password, user.password);
+    })
+    .then((matched) => {
+      if (!matched) {
+        res.status(401).send({ message: 'Incorrect password or email' });
+      }
+
+      const token = jwt.sign({ _id: userId }, 'secret-key', {
         expiresIn: '3d',
       });
       res.cookie('jwt', token, {
-        maxAge: 3600000,
+        maxAge: 3600000 * 24 * 7,
+        sameSite: true,
         httpOnly: true,
       });
-      res.send({ token });
     })
     .catch(() => {
-      res.status(401).send({ message: 'Incorrect password or email' });
+      res.status(500).send({ message: 'Something went wrong' });
     });
 };
