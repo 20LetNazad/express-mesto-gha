@@ -1,6 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const { createUser, login } = require('./controllers/users');
+const { registerValidate, loginValidate } = require('./utils/validate');
 
 mongoose.set('strictQuery', false);
 
@@ -15,8 +16,8 @@ mongoose.connect('mongodb://localhost:27017/mestodb');
 app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
 
-app.post('/signup', createUser);
-app.post('/signin', login);
+app.post('/signup', registerValidate, createUser);
+app.post('/signin', loginValidate, login);
 
 app.use((_, res) => {
   res.status(404).send({ message: 'Route not found' });
