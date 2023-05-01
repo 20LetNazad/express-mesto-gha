@@ -53,7 +53,9 @@ module.exports.createUser = (req, res) => {
       res.status(200).send({ data: user });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
+      if (err.code === 11000) {
+        res.status(409).send({ message: 'There is already a user with such an email' });
+      } else if (err.name === 'ValidationError') {
         res.status(400).send({ message: 'Incorrect data was transmitted' });
       } else {
         res.status(500).send({ message: 'Something went wrong' });
@@ -115,35 +117,18 @@ module.exports.editAvatar = (req, res) => {
     });
 };
 
-module.exports.login = (req, res) => {
+module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
-  let userId;
-
-  User.findOne({ email })
-    .select('+password')
+  return User.findUserByCredentials(email, password)
     .then((user) => {
-      if (!user) {
-        res.status(401).send({ message: 'Incorrect password or email' });
-      }
-
-      userId = user._id;
-      return bcrypt.compare(password, user.password);
-    })
-    .then((matched) => {
-      if (!matched) {
-        res.status(401).send({ message: 'Incorrect password or email' });
-      }
-
-      const token = jwt.sign({ _id: userId }, 'secret-key', {
+      const token = jwt.sign({ _id: user._id }, 'super-strong-secret', {
         expiresIn: '3d',
       });
       res.cookie('jwt', token, {
-        maxAge: 3600000 * 24 * 7,
-        sameSite: true,
+        maxAge: 3600000,
         httpOnly: true,
       });
+      res.send({ token });
     })
-    .catch(() => {
-      res.status(500).send({ message: 'Something went wrong' });
-    });
+    .catch(next);
 };
