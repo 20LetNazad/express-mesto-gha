@@ -1,5 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const { errors } = require('celebrate');
 const { createUser, login } = require('./controllers/users');
 const { registerValidate, loginValidate } = require('./utils/validate');
 
@@ -19,6 +20,7 @@ app.use('/cards', require('./routes/cards'));
 app.post('/signup', registerValidate, createUser);
 app.post('/signin', loginValidate, login);
 
+app.use(errors());
 app.use((_, res) => {
   res.status(404).send({ message: 'Route not found' });
 });
