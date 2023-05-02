@@ -1,16 +1,16 @@
 const Card = require('../models/card');
+const IncorrectDataError = require('../errors/IncorrectDataError');
+const NotFoundError = require('../errors/NotFoundError');
+const ForbiddenError = require('../errors/ForbiddenError');
 
-module.exports.findCards = (req, res) => {
+module.exports.findCards = (req, res, next) => {
   Card.find({})
-    .then((card) => {
-      res.status(200).send(card);
-    })
-    .catch(() => {
-      res.status(500).send({ message: 'Something went wrong' });
-    });
+    .populate(['owner', 'likes'])
+    .then((cards) => res.send({ data: cards }))
+    .catch(next);
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
 
@@ -20,40 +20,40 @@ module.exports.createCard = (req, res) => {
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Incorrect data was transmitted' });
+        next(new IncorrectDataError('Incorrect data was transmitted'));
       } else {
-        res.status(500).send({ message: 'Something went wrong' });
+        next(err);
       }
     });
 };
 
-module.exports.deleteCard = (req, res) => {
+module.exports.deleteCard = (req, res, next) => {
   Card.findByIdAndRemove(req.params.cardId)
     .then((card) => {
       if (!card) {
-        res.status(404).send({ message: 'Card not found' });
+        next(new NotFoundError('Card not found'));
       } else if (card.owner.toString() === req.user._id) {
         Card.deleteOne()
           .then(() => {
             res.status(200).send({ data: card });
           })
-          .catch(() => {
-            res.status(500).send({ message: 'Something went wrong' });
+          .catch((err) => {
+            next(err);
           });
       } else {
-        res.status(403).send({ message: "It's not your post" });
+        next(new ForbiddenError("It's not your post"));
       }
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Incorrect data was transmitted' });
+        next(new IncorrectDataError('Incorrect data was transmitted'));
       } else {
-        res.status(500).send({ message: 'Something went wrong' });
+        next(err);
       }
     });
 };
 
-module.exports.setLike = (req, res) => {
+module.exports.setLike = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $addToSet: { likes: req.user._id } },
@@ -61,21 +61,21 @@ module.exports.setLike = (req, res) => {
   )
     .then((card) => {
       if (!card) {
-        res.status(404).send({ message: 'Card not found' });
+        next(new NotFoundError('Card not found'));
       } else {
         res.status(200).send({ data: card });
       }
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Incorrect data was transmitted' });
+        next(new IncorrectDataError('Incorrect data was transmitted'));
       } else {
-        res.status(500).send({ message: 'Something went wrong' });
+        next(err);
       }
     });
 };
 
-module.exports.delLike = (req, res) => {
+module.exports.delLike = (req, res, next) => {
   Card.findByIdAndUpdate(
     req.params.cardId,
     { $pull: { likes: req.user._id } },
@@ -83,16 +83,16 @@ module.exports.delLike = (req, res) => {
   )
     .then((card) => {
       if (!card) {
-        res.status(404).send({ message: 'Card not found' });
+        next(new NotFoundError('Card not found'));
       } else {
         res.status(200).send({ data: card });
       }
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Incorrect data was transmitted' });
+        next(new IncorrectDataError('Incorrect data was transmitted'));
       } else {
-        res.status(500).send({ message: 'Something went wrong' });
+        next(err);
       }
     });
 };

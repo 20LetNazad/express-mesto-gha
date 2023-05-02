@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const { errors } = require('celebrate');
 const { createUser, login } = require('./controllers/users');
 const { registerValidate, loginValidate } = require('./utils/validate');
+const NotFoundError = require('./errors/NotFoundError');
 
 mongoose.set('strictQuery', false);
 
@@ -21,8 +22,8 @@ app.post('/signup', registerValidate, createUser);
 app.post('/signin', loginValidate, login);
 
 app.use(errors());
-app.use((_, res) => {
-  res.status(404).send({ message: 'Route not found' });
+app.use((_, res, next) => {
+  next(new NotFoundError('Route not found'));
 });
 
 app.listen(PORT, () => {
