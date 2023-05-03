@@ -1,7 +1,7 @@
 const MainErrorHandler = (err, req, res, next) => {
-  const errorCode = err.errorCode || 500;
-  const message = errorCode === 500 ? 'Something went wrong' : err.message;
-  res.status(errorCode).send({ message });
+  const statusCode = err.statusCode || 500;
+  const message = statusCode === 500 ? 'Something went wrong' : err.message;
+  res.status(statusCode).send({ message });
   next();
 };
 
