@@ -4,6 +4,7 @@ const { errors } = require('celebrate');
 const { createUser, login } = require('./controllers/users');
 const { registerValidate, loginValidate } = require('./utils/validate');
 const NotFoundError = require('./errors/NotFoundError');
+const MainErrorHandler = require('./errors/MainErrorHandler');
 
 mongoose.set('strictQuery', false);
 
@@ -21,10 +22,11 @@ app.use('/cards', require('./routes/cards'));
 app.post('/signup', registerValidate, createUser);
 app.post('/signin', loginValidate, login);
 
-app.use(errors());
-app.use((_, res, next) => {
+app.use((req, res, next) => {
   next(new NotFoundError('Route not found'));
 });
+app.use(errors());
+app.use(MainErrorHandler);
 
 app.listen(PORT, () => {
   console.log(`App starting on port ${PORT}`);
