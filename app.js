@@ -1,5 +1,11 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const { errors } = require('celebrate');
+const auth = require('./middlewares/auth');
+const { createUser, login } = require('./controllers/users');
+const { registerValidate, loginValidate } = require('./utils/validate');
+const NotFoundError = require('./errors/NotFoundError');
+const MainErrorHandler = require('./errors/MainErrorHandler');
 
 mongoose.set('strictQuery', false);
 
@@ -11,20 +17,19 @@ app.use(express.urlencoded({ extended: true }));
 
 mongoose.connect('mongodb://localhost:27017/mestodb');
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '6409afc73e2fbf352dfa8ab8',
-  };
+app.post('/signup', registerValidate, createUser);
+app.post('/signin', loginValidate, login);
 
-  next();
-});
+app.use(auth);
 
 app.use('/users', require('./routes/users'));
 app.use('/cards', require('./routes/cards'));
 
-app.use((_, res) => {
-  res.status(404).send({ message: 'Route not found' });
+app.use((req, res, next) => {
+  next(new NotFoundError('Route not found'));
 });
+app.use(errors());
+app.use(MainErrorHandler);
 
 app.listen(PORT, () => {
   console.log(`App starting on port ${PORT}`);

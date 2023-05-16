@@ -1,52 +1,76 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
+const IncorrectDataError = require('../errors/IncorrectDataError');
+const NotFoundError = require('../errors/NotFoundError');
+const ConflictError = require('../errors/ConflictError');
 
-module.exports.findUsers = (req, res) => {
-  User.find({})
-    .then((user) => res.send({ data: user }))
-    .catch(() => {
-      res.status(500).send({ message: 'Something went wrong' });
-    });
-};
-
-module.exports.findUserById = (req, res) => {
+module.exports.getUser = (req, res, next) => {
   User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
-        res.status(404).send({ message: 'User not found' });
-      } else {
-        res.status(200).send({ data: user });
+        throw new NotFoundError('User not found');
       }
+      return res.status(200).send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        res.status(400).send({ message: 'Incorrect data was transmitted' });
+        next(new IncorrectDataError('Incorrect data was transmitted'));
       } else {
-        res.status(500).send({ message: 'Something went wrong' });
+        next(err);
       }
     });
 };
 
-module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+module.exports.findUsers = (req, res, next) => {
+  User.find({})
+    .then((user) => res.send({ data: user }))
+    .catch((err) => {
+      next(err);
+    });
+};
 
-  User.create({
-    name,
-    about,
-    avatar,
-  })
+module.exports.getMyUser = (req, res, next) => {
+  User.findById(req.user._id)
+    .then((users) => res.send({ data: users }))
+    .catch(next);
+};
+
+module.exports.createUser = (req, res, next) => {
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+  bcrypt
+    .hash(password, 10)
+    .then((hash) => User.create({
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
+    }))
     .then((user) => {
-      res.status(200).send({ data: user });
+      res.status(200).send({
+        data: {
+          name: user.name,
+          about: user.about,
+          avatar: user.avatar,
+          email: user.email,
+        },
+      });
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Incorrect data was transmitted' });
+      if (err.code === 11000) {
+        next(new ConflictError('There is already a user with such an email'));
+      } else if (err.name === 'ValidationError') {
+        next(new IncorrectDataError('Incorrect data was transmitted'));
       } else {
-        res.status(500).send({ message: 'Something went wrong' });
+        next(err);
       }
     });
 };
 
-module.exports.editUser = (req, res) => {
+module.exports.editUser = (req, res, next) => {
   const { name, about } = req.body;
 
   User.findByIdAndUpdate(
@@ -59,21 +83,21 @@ module.exports.editUser = (req, res) => {
   )
     .then((user) => {
       if (!user) {
-        res.status(404).send({ message: 'User not found' });
+        next(new NotFoundError('User not found'));
       } else {
         res.status(200).send({ data: user });
       }
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Incorrect data was transmitted' });
+        next(new IncorrectDataError('Incorrect data was transmitted'));
       } else {
-        res.status(500).send({ message: 'Something went wrong' });
+        next(err);
       }
     });
 };
 
-module.exports.editAvatar = (req, res) => {
+module.exports.editAvatar = (req, res, next) => {
   const { avatar } = req.body;
 
   User.findByIdAndUpdate(
@@ -86,16 +110,32 @@ module.exports.editAvatar = (req, res) => {
   )
     .then((user) => {
       if (!user) {
-        res.status(404).send({ message: 'User not found' });
+        next(new NotFoundError('User not found'));
       } else {
         res.status(200).send({ data: user });
       }
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        res.status(400).send({ message: 'Incorrect data was transmitted' });
+        next(new IncorrectDataError('Incorrect data was transmitted'));
       } else {
-        res.status(500).send({ message: 'Something went wrong' });
+        next(err);
       }
     });
+};
+
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, 'super-secret-password', {
+        expiresIn: '3d',
+      });
+      res.cookie('jwt', token, {
+        maxAge: 3600000,
+        httpOnly: true,
+      });
+      res.send({ token });
+    })
+    .catch(next);
 };
