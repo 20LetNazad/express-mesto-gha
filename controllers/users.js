@@ -5,14 +5,13 @@ const IncorrectDataError = require('../errors/IncorrectDataError');
 const NotFoundError = require('../errors/NotFoundError');
 const ConflictError = require('../errors/ConflictError');
 
-function findUserById(req, res, next, userId) {
-  User.findById(userId)
+module.exports.getUser = (req, res, next) => {
+  User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
-        next(new NotFoundError('User not found'));
-      } else {
-        res.status(200).send({ data: user });
+        throw new NotFoundError('User not found');
       }
+      return res.status(200).send({ data: user });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -21,7 +20,7 @@ function findUserById(req, res, next, userId) {
         next(err);
       }
     });
-}
+};
 
 module.exports.findUsers = (req, res, next) => {
   User.find({})
@@ -32,11 +31,9 @@ module.exports.findUsers = (req, res, next) => {
 };
 
 module.exports.getMyUser = (req, res, next) => {
-  findUserById(req.user._id, res, next);
-};
-
-module.exports.getUser = (req, res, next) => {
-  findUserById(req.params.userId, res, next);
+  User.findById(req.user._id)
+    .then((users) => res.send({ data: users }))
+    .catch(next);
 };
 
 module.exports.createUser = (req, res, next) => {
@@ -53,7 +50,14 @@ module.exports.createUser = (req, res, next) => {
       password: hash,
     }))
     .then((user) => {
-      res.status(200).send({ data: user });
+      res.status(200).send({
+        data: {
+          name: user.name,
+          about: user.about,
+          avatar: user.avatar,
+          email: user.email,
+        },
+      });
     })
     .catch((err) => {
       if (err.code === 11000) {
@@ -124,7 +128,7 @@ module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
   return User.findUserByCredentials(email, password)
     .then((user) => {
-      const token = jwt.sign({ _id: user._id }, 'super-strong-secret', {
+      const token = jwt.sign({ _id: user._id }, 'super-secret-password', {
         expiresIn: '3d',
       });
       res.cookie('jwt', token, {
