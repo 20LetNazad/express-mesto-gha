@@ -1,6 +1,6 @@
 const { celebrate, Joi } = require('celebrate');
 
-const urlScheme = /https?:\/\/(www\.)?[a-zA-Z\d]+\.[\w\-._~:/?#[\]@!$&'()*+,;=]{2,}#?/;
+const urlScheme = /https?:\/\/(www\.)?[a-zA-Z\d-]+\.[\w\d\-.~:/?#[\]@!$&'()*+,;=]{2,}#?/;
 
 const registerValidate = celebrate({
   body: Joi.object().keys({
@@ -52,6 +52,7 @@ const cardValidate = celebrate({
 });
 
 module.exports = {
+  urlScheme,
   registerValidate,
   loginValidate,
   userValidate,

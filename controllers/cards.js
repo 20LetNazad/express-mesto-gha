@@ -28,29 +28,19 @@ module.exports.createCard = (req, res, next) => {
 };
 
 module.exports.deleteCard = (req, res, next) => {
-  Card.findByIdAndRemove(req.params.cardId)
-    .then((card) => {
-      if (!card) {
-        next(new NotFoundError('Card not found'));
-      } else if (card.owner.toString() === req.user._id) {
-        Card.deleteOne()
-          .then(() => {
-            res.status(200).send({ data: card });
-          })
-          .catch((err) => {
-            next(err);
-          });
-      } else {
-        next(new ForbiddenError("It's not your post"));
-      }
+  Card.findById(req.params.cardId)
+    .orFail(() => {
+      throw new NotFoundError('Card not found');
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new IncorrectDataError('Incorrect data was transmitted'));
-      } else {
-        next(err);
+    .then((card) => {
+      if (!card.owner.equals(req.user._id)) {
+        return next(new ForbiddenError("It's not your post"));
       }
-    });
+      return card.remove().then(() => {
+        res.send({ message: 'Card has been deleted' });
+      });
+    })
+    .catch(next);
 };
 
 module.exports.setLike = (req, res, next) => {
